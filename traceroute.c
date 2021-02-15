@@ -135,7 +135,7 @@ int main()
     int ttl = 0;
     int count = 0;
     struct timeval timeout;
-    struct timezone tz;
+    // struct timezone tz;
     ttl = 1;
 
     // fcntl(recvsock, F_SETFL, O_NONBLOCK);
@@ -146,8 +146,9 @@ int main()
 
         FD_SET(recvsock, &read);
 
-        gettimeofday(&timeout, &tz);
-        timeout.tv_sec += 10;
+        // gettimeofday(&timeout, &tz);
+        timeout.tv_sec = 3;
+        timeout.tv_usec = 0;
         // ttl++;
         // ttl = 1;
         printf("ttl = %d\n", ttl);
