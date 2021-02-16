@@ -13,6 +13,7 @@
 #include <errno.h>
 #include <sys/time.h>
 #include <fcntl.h>
+#include <netinet/ip.h>
 // #include <icmp.h>
 
 typedef struct icmp_h
@@ -23,5 +24,33 @@ typedef struct icmp_h
     uint32_t padding;
     
 } icmp_header;
+
+typedef struct s_args
+{
+    char *target;
+    char error_msg[1024];
+} t_args;
+
+typedef struct s_env
+{
+    int sendsock;
+    int recvsock;
+    t_args args;
+    struct sockaddr_in sendaddr;
+    struct sockaddr_in recvaddr;
+    fd_set read_set;
+    struct timeval timeout;
+    struct addrinfo *targetinfo;
+    int ttl;
+
+} t_env;
+
+t_env env;
+
+void display_help(int code);
+void	parse_args(int argc, char **argv);
+void error_exit(char *error);
+int	ft_isdigit(int c);
+void	display_wrong_option(char option);
 
 #endif
