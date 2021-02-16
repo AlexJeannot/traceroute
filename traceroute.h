@@ -14,7 +14,8 @@
 #include <sys/time.h>
 #include <fcntl.h>
 #include <netinet/ip.h>
-// #include <icmp.h>
+#include <netinet/ip_icmp.h>
+#include <netinet/udp.h>
 
 typedef struct icmp_h
 {
