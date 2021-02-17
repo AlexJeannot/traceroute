@@ -39,8 +39,8 @@ void set_ttl(void)
 struct my_udp
 {
     struct udphdr d;
-    // char data[1472];
-    char data[32];
+    char data[1472];
+    // char data[20];
 };
 
 struct tosend
@@ -96,7 +96,8 @@ void send_datagram(void)
     packet.p.tos = 0;
     packet.p.tot_len = sizeof(packet);
     packet.p.id = htons(44);
-    packet.p.frag_off = htons(0);
+    // packet.p.frag_off = htons(0);
+    packet.p.frag_off = 16384;
     // packet.p.frag_off = htons(16384);
     printf(">>>>>>>>>>> TTL = %d\n", env.ttl);
     packet.p.ttl = env.ttl;
@@ -104,20 +105,49 @@ void send_datagram(void)
     packet.p.check = 0;
     packet.p.check = calcul_checksum(&packet.p, sizeof(packet.p));
     // env.ttl++;
+    char host[1024];
+    struct hostent *host_entry;
 
-    inet_pton(AF_INET, "10.0.2.15", &packet.p.saddr);
+    if (gethostname(host, sizeof(host)) == -1)
+        printf("GETHOSTNAME FAILED\n");
+    if ((host_entry = gethostbyname(host)) == NULL)
+        printf("GETHOSTBYNAME FAILED\n");
+
+    // inet_pton(AF_INET, "192.168.1.68", &packet.p.saddr);
+    char *ip = inet_ntoa(*((struct in_addr *)(host_entry->h_addr_list[0])));
+    printf("host_entry->h_addr_list[0] = %s\n", host_entry->h_addr_list[0]);
+    inet_pton(AF_INET, ip, &packet.p.saddr);
     inet_pton(AF_INET, "8.8.8.8", &packet.p.daddr);
 
-    struct udphdr datagram;
+    char src_addr[INET_ADDRSTRLEN];
+
+    inet_ntop(AF_INET,&(packet.p.saddr) , &(src_addr[0]), INET_ADDRSTRLEN);
+    printf("src_addr = %s\n", src_addr);
+
+    // printf("\n--------------\n");
+    // char host[1024];
+    // struct hostent *host_entry;
+    // // char *ip;
+    // if (gethostname(host, sizeof(host)) == -1)
+    //     printf("GETHOSTNAME FAILED\n");
+    // if ((host_entry = gethostbyname(host)) == NULL)
+    //     printf("GETHOSTBYNAME FAILED\n");
+    // for (int count = 0; host_entry->h_addr_list[count]; count++)
+    //     printf("IP = %s\n", inet_ntoa(*((struct in_addr *)(host_entry->h_addr_list[count]))));
+    // printf("IP = %s\n", inet_ntoa(*((struct in_addr *)(host_entry->h_addr_list[0]))));
+    // printf("IP = %s\n", inet_ntoa(*((struct in_addr *)(host_entry->h_addr_list[1]))));
+    // // ip = inet_ntoa((struct in_addr*)host_entry->h_addr_list[0]);
+    // // printf()
+    // printf("\n--------------\n");
 
     bzero(&(packet.my_d.data), sizeof(packet.my_d.data));
-    packet.my_d.d.source = htons(port2);
+    packet.my_d.d.uh_sport = htons(port2);
     port2++;
     printf(">>>>>>>>>>> PORT = %d\n", port);
-    packet.my_d.d.dest = htons(port);
+    packet.my_d.d.uh_dport = htons(port);
     port += 3;
-    packet.my_d.d.len = htons(sizeof(packet.my_d));
-    packet.my_d.d.check = 0;
+    packet.my_d.d.uh_ulen = htons(sizeof(packet.my_d));
+    packet.my_d.d.uh_sum = 0;
 
     struct checksum_udp test;
     test.saddr = packet.p.saddr;
@@ -126,7 +156,7 @@ void send_datagram(void)
     test.protocol = 17;
     test.len = htons(sizeof(packet.my_d));
     test.header = packet.my_d;
-    packet.my_d.d.check = calcul_checksum(&(test), sizeof(test));
+    packet.my_d.d.uh_sum = calcul_checksum(&(test), sizeof(test));
 
 
 
@@ -168,10 +198,10 @@ void manage_icmp_reply(void)
     inet_ntop(AF_INET,&(env.recvaddr.sin_addr) , &(src_addr[0]), INET_ADDRSTRLEN);
     printf("src_addr = %s\n", src_addr);
 
-    struct icmphdr *ptr;
+    struct icmp_h *ptr;
 
 
-    ptr = (struct icmphdr *)&buf[20];
+    ptr = (struct icmp_h *)&buf[20];
     printf("type = %d\n", ptr->type);
     printf("code = %d\n", ptr->code);
 
@@ -300,7 +330,6 @@ int main(int argc, char **argv)
     bzero(&(env.sendaddr), sizeof(env.sendaddr));
     bzero(&(env.recvaddr), sizeof(env.recvaddr));                                         
     bzero(&(hints), sizeof(hints));
-    bzero(&(bindaddr), sizeof(bindaddr));
     bzero(&(recvaddr), sizeof(recvaddr));
     env.args.target = NULL;
 
@@ -308,15 +337,8 @@ int main(int argc, char **argv)
     int retinet = env.sendaddr.sin_addr.s_addr = inet_addr("8.8.8.8");
     env.sendaddr.sin_port = htons(33435); //33435
 
-    bindaddr.sin_family = AF_INET;
-    int retinet2 = bindaddr.sin_addr.s_addr = inet_addr("10.0.2.15");
-    // servaddr.sin_port = htons(30000);
-
-    printf("retinet = %d\n", retinet2);
-    // printf("retinet2 = %d\n", retinet2);
-
     recvaddr.sin_family = AF_INET;
-    recvaddr.sin_addr.s_addr = inet_addr("10.0.2.15");
+    recvaddr.sin_addr.s_addr = inet_addr("192.168.1.68");
 
     int retb;
 
