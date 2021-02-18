@@ -58,7 +58,15 @@ int	parse_first_ttl(char *current_arg, char *next_arg)
 // }
 
 
-
+void set_ipv6(void)
+{
+	printf("SET IPV6\n");
+	env.ip.type = 6;
+	env.ip.protocol = IPPROTO_IPV6;
+	env.ip.family = AF_INET6;
+    env.ip.addrlen = INET6_ADDRSTRLEN;
+	env.ip.icmp = IPPROTO_ICMPV6;
+}
 
 /*
  * Parsing of options (beginning by an -)
@@ -74,6 +82,8 @@ int	parse_options(char *option, char* next_arg)
 		// 	env.args.verbose = 1;
 		if (option[count] == 'h')
 			display_help(0);
+		else if (option[count] == '6')
+			set_ipv6();
 		else if (option[count] == 'f')
 		{
 			if (option[count] == 'f')

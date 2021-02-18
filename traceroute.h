@@ -32,36 +32,31 @@ typedef struct s_args
     char error_msg[1024];
 } t_args;
 
+typedef struct s_ip
+{
+    int type;
+    int protocol;
+    int family;
+    int addrlen;
+    int icmp;
+
+} t_ip;
+
 typedef struct s_env
 {
     int sendsock;
     int recvsock;
     t_args args;
+    t_ip ip;
     struct sockaddr_in sendaddr;
     struct sockaddr_in recvaddr;
     fd_set read_set;
     struct timeval timeout;
     struct addrinfo *targetinfo;
     int ttl;
+    uint16_t port;
 
 } t_env;
-
-struct iphdr {
-
-    uint8_t     ihl:4;
-    uint8_t    version:4;
-
-    uint8_t   tos;
-    uint16_t  tot_len;
-    uint16_t  id;
-    uint16_t  frag_off;
-    uint8_t   ttl;
-    uint8_t   protocol;
-    uint16_t  check;
-    uint32_t  saddr;
-    uint32_t  daddr;
-         /*The options start here. */
-};
 
 t_env env;
 

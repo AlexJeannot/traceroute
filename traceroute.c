@@ -30,34 +30,12 @@ void error_exit(char *error)
 
 void set_ttl(void)
 {
-    // printf("ttl = %d\n", env.ttl);
-    // int set_ttl = env.ttl;
-    // if ((setsockopt(env.sendsock, IPPROTO_IP, IP_TTL, &set_ttl, (socklen_t)(sizeof(int)))) < 0)
-    //     error_exit("TTL setup");
+    printf("ttl = %d\n", env.ttl);
+    int set_ttl = env.ttl;
+    if ((setsockopt(env.sendsock, env.ip.protocol, IP_TTL, &set_ttl, (socklen_t)(sizeof(int)))) < 0)
+        error_exit("TTL setup");
 }
 
-struct my_udp
-{
-    struct udphdr d;
-    char data[1472];
-    // char data[20];
-};
-
-struct tosend
-{
-    struct iphdr p;
-    struct my_udp my_d;
-};
-
-struct checksum_udp
-{
-    uint32_t saddr;
-    uint32_t daddr;
-    uint8_t zero;
-    uint8_t protocol;
-    uint16_t len;
-    struct my_udp header;
-};
 
 uint16_t	calcul_checksum(void *data, int size)
 {
@@ -80,94 +58,76 @@ uint16_t	calcul_checksum(void *data, int size)
 	return ((uint16_t)checksum);
 }
 
+struct sockaddr *set_sendaddr_ipv4(void)
+{
+    struct sockaddr_in *sendaddr;
+
+    if (!(sendaddr = (struct sockaddr_in*)malloc(sizeof(struct sockaddr_in))))
+        error_exit("sending structure allocation");
+
+    bzero(&(*sendaddr), sizeof(*sendaddr));
+    sendaddr->sin_family = env.ip.family;
+    sendaddr->sin_addr = ((struct sockaddr_in *)env.targetinfo->ai_addr)->sin_addr;
+    sendaddr->sin_port = htons(env.port);
+
+    env.port++;
+    return((struct sockaddr*)sendaddr);
+}
+
+struct sockaddr *set_sendaddr_ipv6(void)
+{
+    struct sockaddr_in6 *sendaddr;
+
+    if (!(sendaddr = (struct sockaddr_in6*)malloc(sizeof(struct sockaddr_in6))))
+        error_exit("sending structure allocation");
+
+    bzero(&(*sendaddr), sizeof(*sendaddr));
+    sendaddr->sin6_family = env.ip.family;
+    sendaddr->sin6_addr = ((struct sockaddr_in6 *)env.targetinfo->ai_addr)->sin6_addr;
+    sendaddr->sin6_port = htons(env.port);
+
+    env.port++;
+    return((struct sockaddr*)sendaddr);
+}
+
+
 void send_datagram(void)
 {
+    struct sockaddr *sendaddr;
     char sendbuf[150];
     int ret;
-    static int port = 33435;
-    static int port2 = 47500;
-
-    struct tosend packet;
-
-
-    bzero(&packet, sizeof(packet));
-    packet.p.version = 4;
-    packet.p.ihl = 5;
-    packet.p.tos = 0;
-    packet.p.tot_len = sizeof(packet);
-    packet.p.id = htons(44);
-    // packet.p.frag_off = htons(0);
-    packet.p.frag_off = 16384;
-    // packet.p.frag_off = htons(16384);
-    printf(">>>>>>>>>>> TTL = %d\n", env.ttl);
-    packet.p.ttl = env.ttl;
-    packet.p.protocol = 17;
-    packet.p.check = 0;
-    packet.p.check = calcul_checksum(&packet.p, sizeof(packet.p));
-    // env.ttl++;
-    char host[1024];
-    struct hostent *host_entry;
-
-    if (gethostname(host, sizeof(host)) == -1)
-        printf("GETHOSTNAME FAILED\n");
-    if ((host_entry = gethostbyname(host)) == NULL)
-        printf("GETHOSTBYNAME FAILED\n");
-
-    // inet_pton(AF_INET, "192.168.1.68", &packet.p.saddr);
-    char *ip = inet_ntoa(*((struct in_addr *)(host_entry->h_addr_list[0])));
-    printf("host_entry->h_addr_list[0] = %s\n", host_entry->h_addr_list[0]);
-    inet_pton(AF_INET, ip, &packet.p.saddr);
-    inet_pton(AF_INET, "8.8.8.8", &packet.p.daddr);
-
-    char src_addr[INET_ADDRSTRLEN];
-
-    inet_ntop(AF_INET,&(packet.p.saddr) , &(src_addr[0]), INET_ADDRSTRLEN);
-    printf("src_addr = %s\n", src_addr);
-
-    // printf("\n--------------\n");
-    // char host[1024];
-    // struct hostent *host_entry;
-    // // char *ip;
-    // if (gethostname(host, sizeof(host)) == -1)
-    //     printf("GETHOSTNAME FAILED\n");
-    // if ((host_entry = gethostbyname(host)) == NULL)
-    //     printf("GETHOSTBYNAME FAILED\n");
-    // for (int count = 0; host_entry->h_addr_list[count]; count++)
-    //     printf("IP = %s\n", inet_ntoa(*((struct in_addr *)(host_entry->h_addr_list[count]))));
-    // printf("IP = %s\n", inet_ntoa(*((struct in_addr *)(host_entry->h_addr_list[0]))));
-    // printf("IP = %s\n", inet_ntoa(*((struct in_addr *)(host_entry->h_addr_list[1]))));
-    // // ip = inet_ntoa((struct in_addr*)host_entry->h_addr_list[0]);
-    // // printf()
-    // printf("\n--------------\n");
-
-    bzero(&(packet.my_d.data), sizeof(packet.my_d.data));
-    packet.my_d.d.uh_sport = htons(port2);
-    port2++;
-    printf(">>>>>>>>>>> PORT = %d\n", port);
-    packet.my_d.d.uh_dport = htons(port);
-    port += 3;
-    packet.my_d.d.uh_ulen = htons(sizeof(packet.my_d));
-    packet.my_d.d.uh_sum = 0;
-
-    struct checksum_udp test;
-    test.saddr = packet.p.saddr;
-    test.daddr = packet.p.daddr;
-    test.zero = 0;
-    test.protocol = 17;
-    test.len = htons(sizeof(packet.my_d));
-    test.header = packet.my_d;
-    packet.my_d.d.uh_sum = calcul_checksum(&(test), sizeof(test));
-
-
 
     bzero(&sendbuf, sizeof(sendbuf));
+
+    sendaddr = (env.ip.type == 4) ? set_sendaddr_ipv4() : set_sendaddr_ipv6();
+
+    printf("env.ip.family = %d\n", env.ip.family);
+    printf("sizeof(struct sockaddr) = %lu\n", sizeof(struct sockaddr));
+    printf("sizeof(struct sockaddr_in) = %lu\n", sizeof(struct sockaddr_in));
+    printf("sizeof(struct sockaddr_in6) = %lu\n", sizeof(struct sockaddr_in6));
+    
+    uint64_t size;
+    size = (env.ip.type == 4) ? sizeof(struct sockaddr_in) : sizeof(struct sockaddr_in6);
+
+
+    char send_addr[env.ip.addrlen];
+    bzero(&send_addr, sizeof(send_addr));
+
+    if (env.ip.type == 4)
+        inet_ntop(env.ip.family, &(((struct sockaddr_in*)sendaddr)->sin_addr), &(send_addr[0]), env.ip.addrlen);
+    else
+        inet_ntop(env.ip.family, &(((struct sockaddr_in6*)sendaddr)->sin6_addr), &(send_addr[0]), env.ip.addrlen);
+
+    printf(">>>>>>>> ip: %s\n", send_addr);
+
     printf("AVANT SEND\n");
-    if ((ret = sendto(env.sendsock, &packet, sizeof(packet), 0, env.targetinfo->ai_addr, (socklen_t)sizeof(env.sendaddr))) < 0)
+    if ((ret = sendto(env.sendsock, &sendbuf[0], sizeof(sendbuf), 0, sendaddr, (socklen_t)size)) < 0)
     {
         printf("SEND FAILED ret = %d\n", ret);
         printf("ERRNO = %d\n", errno);
         perror("SEND ERROR: ");
     }
+    free(sendaddr);
 }
 
 void set_select(void)
@@ -178,13 +138,45 @@ void set_select(void)
     env.timeout.tv_sec = 5;
 }
 
+struct sockaddr *set_recvaddr_ipv4(void)
+{
+    struct sockaddr_in *recvaddr;
+
+    if (!(recvaddr = (struct sockaddr_in*)malloc(sizeof(struct sockaddr_in))))
+        error_exit("receiving structure allocation");
+    bzero(&(*recvaddr), sizeof(*recvaddr));
+    recvaddr->sin_addr.s_addr = htonl(INADDR_ANY);
+
+
+    return ((struct sockaddr*)recvaddr);
+}
+
+struct sockaddr *set_recvaddr_ipv6(void)
+{
+    struct sockaddr_in6 *recvaddr;
+
+    if (!(recvaddr = (struct sockaddr_in6*)malloc(sizeof(struct sockaddr_in6))))
+        error_exit("receiving structure allocation");
+    bzero(&(*recvaddr), sizeof(*recvaddr));
+    recvaddr->sin6_addr = in6addr_any;
+
+    return ((struct sockaddr*)recvaddr);
+}
+
 void manage_icmp_reply(void)
 {
     printf("\n===================== REC %d =======================\n", env.ttl);
-    int soutLen = sizeof(env.recvaddr);
-    char buf[1024];
+    struct sockaddr* recvaddr;
 
-    int msgLen = recvfrom(env.recvsock, buf, sizeof(buf), 0, (struct sockaddr *)&env.recvaddr, (socklen_t *)&soutLen);
+    recvaddr = (env.ip.type == 4) ? set_recvaddr_ipv4() : set_recvaddr_ipv6();
+
+    uint64_t size;
+    size = (env.ip.type == 4) ? sizeof(struct sockaddr_in) : sizeof(struct sockaddr_in6);
+
+    char buf[1024];
+    bzero(&buf, sizeof(buf));
+
+    int msgLen = recvfrom(env.recvsock, buf, sizeof(buf), 0, recvaddr, (socklen_t *)&size);
     if (msgLen == -1)
     {
         printf("ERRNO = %d\n", errno);
@@ -193,10 +185,15 @@ void manage_icmp_reply(void)
     printf("msglen = %d\n", msgLen);
     // printf("-------------\nbuf = %s\nmsgLen = %d\n", buf, msgLen);
 
-    char src_addr[INET_ADDRSTRLEN];
+    char recv_addr[env.ip.addrlen];
+    bzero(&recv_addr, sizeof(recv_addr));
 
-    inet_ntop(AF_INET,&(env.recvaddr.sin_addr) , &(src_addr[0]), INET_ADDRSTRLEN);
-    printf("src_addr = %s\n", src_addr);
+    if (env.ip.type == 4)
+        inet_ntop(env.ip.family, &(((struct sockaddr_in*)recv_addr)->sin_addr), &(recv_addr[0]), env.ip.addrlen);
+    else
+        inet_ntop(env.ip.family, &(((struct sockaddr_in6*)recv_addr)->sin6_addr), &(recv_addr[0]), env.ip.addrlen);
+
+    printf(">>>>>>>> ip: %s\n", recv_addr);
 
     struct icmp_h *ptr;
 
@@ -208,7 +205,7 @@ void manage_icmp_reply(void)
 
     bzero(&buf, sizeof(buf));
     msgLen = -3;
-
+    free(recvaddr);
     printf("===================== REC %d =======================\n\n",  env.ttl);
 }
 
@@ -220,18 +217,6 @@ void manage_no_reply(void)
 void traceroute_loop(void)
 {
     int count;
-
-
-    // int val = IP_PMTUDISC_PROBE;
-    // int ret = setsockopt(env.sendsock, IPPROTO_IP, IP_MTU_DISCOVER, &val, sizeof(val));
-    // perror("DONT FRAG: ");
-    // printf("RET IP DONT FRAG = %d\n", ret);
-
-    int val = 1;
-    int ret = setsockopt(env.sendsock, IPPROTO_IP, IP_HDRINCL, &val, sizeof(val));
-    printf("RET HDRINCL = %d\n", ret);
-    perror("HDRINCL: ");
-
 
     count = 0;
     while (1)
@@ -275,10 +260,12 @@ void create_socket(void)
     env.sendsock = -1;
     env.recvsock = -1;
 
-    if ((env.sendsock = socket(AF_INET, SOCK_RAW, IPPROTO_UDP)) < 0)
+    printf("socket env.ip.family = %d\n", env.ip.family);
+
+    if ((env.sendsock = socket(env.ip.family, SOCK_DGRAM, IPPROTO_UDP)) < 0)
         error_exit("UDP socket creation");
 
-    if ((env.recvsock = socket(AF_INET, SOCK_RAW, IPPROTO_ICMP)) < 0)
+    if ((env.recvsock = socket(env.ip.family, SOCK_RAW, env.ip.icmp)) < 0)
         error_exit("ICMP socket creation");
 }
 
@@ -292,13 +279,26 @@ void get_targetinfo(void)
     struct addrinfo hints;
     int ret;
 
-    hints.ai_family = AF_INET;
-    hints.ai_socktype = SOCK_RAW;
+    bzero(&hints, sizeof(hints));
+    bzero(&env.targetinfo, sizeof(env.targetinfo));
+
+    hints.ai_family = env.ip.family;
+    hints.ai_socktype = SOCK_DGRAM;
     hints.ai_protocol = IPPROTO_UDP;
 
-    if ((ret = getaddrinfo("8.8.8.8", NULL, &hints, &(env.targetinfo))) != 0)
+    printf("env.args.target = %s\n", env.args.target);
+    if ((ret = getaddrinfo(env.args.target, NULL, &hints, &(env.targetinfo))) != 0)
         addrinfo_error(ret);
-    ((struct sockaddr_in*)env.targetinfo->ai_addr)->sin_port = htons(33435);
+
+    char send_addr[env.ip.addrlen];
+    bzero(&send_addr, sizeof(send_addr));
+
+    if (env.ip.type == 4)
+        inet_ntop(env.ip.family, &(((struct sockaddr_in*)env.targetinfo->ai_addr)->sin_addr), &(send_addr[0]), env.ip.addrlen);
+    else
+        inet_ntop(env.ip.family, &(((struct sockaddr_in6*)env.targetinfo->ai_addr)->sin6_addr), &(send_addr[0]), env.ip.addrlen);
+
+    printf(">>>>>>>>>> send_addr = %s\n", send_addr);
 }
 
 void display_help(int code)
@@ -313,43 +313,32 @@ void	display_wrong_option(char option)
 	display_help(1);
 }
 
-int main(int argc, char **argv)
-
+void set_ipv4(void)
 {
+	env.ip.type = 4;
+	env.ip.protocol = IPPROTO_IP;
+	env.ip.family = AF_INET;
+    env.ip.addrlen = INET_ADDRSTRLEN;
+	env.ip.icmp = IPPROTO_ICMP;
+}
+
+int main(int argc, char **argv)
+{
+    env.port = 33435;
+    env.args.target = NULL;
+
     verify_user_rights();
+    set_ipv4();
     parse_args(argc, argv);
     create_socket();
     get_targetinfo();
-    
-    // struct sockaddr_in servaddr;
-    struct sockaddr_in recvaddr;
-    struct sockaddr_in bindaddr;
-    struct addrinfo *clientaddr;
-    struct addrinfo hints;
 
-    bzero(&(env.sendaddr), sizeof(env.sendaddr));
     bzero(&(env.recvaddr), sizeof(env.recvaddr));                                         
-    bzero(&(hints), sizeof(hints));
-    bzero(&(recvaddr), sizeof(recvaddr));
-    env.args.target = NULL;
 
-    env.sendaddr.sin_family = AF_INET;
-    int retinet = env.sendaddr.sin_addr.s_addr = inet_addr("8.8.8.8");
-    env.sendaddr.sin_port = htons(33435); //33435
-
-    recvaddr.sin_family = AF_INET;
+    struct sockaddr_in recvaddr;
+    bzero(&(env.recvaddr), sizeof(env.recvaddr));  
+    recvaddr.sin_family = env.ip.family;
     recvaddr.sin_addr.s_addr = inet_addr("192.168.1.68");
-
-    int retb;
-
-    printf("retb = %d\n", retb);
-    hints.ai_family = AF_INET;
-    hints.ai_socktype = SOCK_DGRAM;
-    hints.ai_protocol = IPPROTO_UDP;
-
-    if (getaddrinfo("8.8.8.8", NULL, &hints, &(clientaddr)) != 0)
-        printf("GETADDRINFO FAILED\n");
-    display_addr_info(clientaddr);
 
 
     traceroute_loop();
