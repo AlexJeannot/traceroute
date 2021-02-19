@@ -28,190 +28,256 @@ void error_exit(char *error)
     exit(1);
 }
 
+void display_ttl(void)
+{
+    char display_ttl[6];
+
+    if (env.ttl < 10)
+        sprintf(display_ttl, " %d  ", env.ttl);
+    else
+        sprintf(display_ttl, "%d  ", env.ttl);
+        
+    write(1, &display_ttl[0], ft_strlen(display_ttl));
+}
+
 void set_ttl(void)
 {
-    printf("ttl = %d\n", env.ttl);
-    int set_ttl = env.ttl;
-    if ((setsockopt(env.sendsock, env.ip.protocol, IP_TTL, &set_ttl, (socklen_t)(sizeof(int)))) < 0)
+    if ((setsockopt(env.sendsock, env.ip.protocol, IP_TTL, &env.ttl, (socklen_t)(sizeof(env.ttl)))) < 0)
         error_exit("TTL setup");
+    display_ttl();
 }
 
-
-uint16_t	calcul_checksum(void *data, int size)
+long double	get_ts(void)
 {
-	uint64_t	checksum;
-	uint16_t	*addr;
+	struct	timeval tv;
+	struct	timezone tz;
 
-	checksum = 0;
-	addr = data;
-	while (size > 1)
-	{
-		checksum += *addr;
-		addr++;
-		size -= (int)sizeof(uint16_t);
-	}
-	if (size == 1)
-		checksum += *(uint8_t*)addr;
-	checksum = (checksum >> 16) + (checksum & 0xFFFF);
-	checksum += (checksum >> 16);
-	checksum = ~checksum;
-	return ((uint16_t)checksum);
+	gettimeofday(&tv, &tz);
+	return (((long double)tv.tv_sec * 1000) + ((long double)tv.tv_usec / 1000));
 }
 
-struct sockaddr *set_sendaddr_ipv4(void)
-{
-    struct sockaddr_in *sendaddr;
 
-    if (!(sendaddr = (struct sockaddr_in*)malloc(sizeof(struct sockaddr_in))))
-        error_exit("sending structure allocation");
-
-    bzero(&(*sendaddr), sizeof(*sendaddr));
-    sendaddr->sin_family = env.ip.family;
-    sendaddr->sin_addr = ((struct sockaddr_in *)env.targetinfo->ai_addr)->sin_addr;
-    sendaddr->sin_port = htons(env.port);
-
-    env.port++;
-    return((struct sockaddr*)sendaddr);
-}
-
-struct sockaddr *set_sendaddr_ipv6(void)
-{
-    struct sockaddr_in6 *sendaddr;
-
-    if (!(sendaddr = (struct sockaddr_in6*)malloc(sizeof(struct sockaddr_in6))))
-        error_exit("sending structure allocation");
-
-    bzero(&(*sendaddr), sizeof(*sendaddr));
-    sendaddr->sin6_family = env.ip.family;
-    sendaddr->sin6_addr = ((struct sockaddr_in6 *)env.targetinfo->ai_addr)->sin6_addr;
-    sendaddr->sin6_port = htons(env.port);
-
-    env.port++;
-    return((struct sockaddr*)sendaddr);
-}
 
 
 void send_datagram(void)
 {
-    struct sockaddr *sendaddr;
     char sendbuf[150];
     int ret;
 
     bzero(&sendbuf, sizeof(sendbuf));
 
-    sendaddr = (env.ip.type == 4) ? set_sendaddr_ipv4() : set_sendaddr_ipv6();
+    (env.ip.type == 4) ? set_sendaddr_ipv4() : set_sendaddr_ipv6();
 
-    printf("env.ip.family = %d\n", env.ip.family);
-    printf("sizeof(struct sockaddr) = %lu\n", sizeof(struct sockaddr));
-    printf("sizeof(struct sockaddr_in) = %lu\n", sizeof(struct sockaddr_in));
-    printf("sizeof(struct sockaddr_in6) = %lu\n", sizeof(struct sockaddr_in6));
     
-    uint64_t size;
+    socklen_t size;
     size = (env.ip.type == 4) ? sizeof(struct sockaddr_in) : sizeof(struct sockaddr_in6);
+    // printf("CHECK 3\n");
 
 
     char send_addr[env.ip.addrlen];
     bzero(&send_addr, sizeof(send_addr));
+    // printf("CHECK 4\n");
 
     if (env.ip.type == 4)
-        inet_ntop(env.ip.family, &(((struct sockaddr_in*)sendaddr)->sin_addr), &(send_addr[0]), env.ip.addrlen);
+        inet_ntop(env.ip.family, &(((struct sockaddr_in*)env.sendaddr)->sin_addr), &(send_addr[0]), env.ip.addrlen);
     else
-        inet_ntop(env.ip.family, &(((struct sockaddr_in6*)sendaddr)->sin6_addr), &(send_addr[0]), env.ip.addrlen);
+        inet_ntop(env.ip.family, &(((struct sockaddr_in6*)env.sendaddr)->sin6_addr), &(send_addr[0]), env.ip.addrlen);
+    // printf("CHECK 5\n");
 
-    printf(">>>>>>>> ip: %s\n", send_addr);
+    // printf(">>>>>>>> send ip: %s\n", send_addr);
 
-    printf("AVANT SEND\n");
-    if ((ret = sendto(env.sendsock, &sendbuf[0], sizeof(sendbuf), 0, sendaddr, (socklen_t)size)) < 0)
+    // printf("AVANT SEND\n");
+    env.time.ts_before = get_ts();
+    // printf("SIZE = %u\n", size);
+    if ((ret = sendto(env.sendsock, &sendbuf[0], sizeof(sendbuf), 0, env.sendaddr, size)) < 0)
     {
         printf("SEND FAILED ret = %d\n", ret);
         printf("ERRNO = %d\n", errno);
         perror("SEND ERROR: ");
     }
-    free(sendaddr);
+    free(env.sendaddr);
+    env.sendaddr = NULL;
 }
 
 void set_select(void)
 {
     FD_ZERO(&(env.read_set));
     FD_SET(env.recvsock, &(env.read_set));
-    bzero(&(env.timeout), sizeof(env.timeout));
-    env.timeout.tv_sec = 5;
+    bzero(&(env.time.to), sizeof(env.time.to));
+    env.time.to.tv_sec = 5;
 }
 
-struct sockaddr *set_recvaddr_ipv4(void)
+int ttl_exceeded(int type, int code)
 {
-    struct sockaddr_in *recvaddr;
-
-    if (!(recvaddr = (struct sockaddr_in*)malloc(sizeof(struct sockaddr_in))))
-        error_exit("receiving structure allocation");
-    bzero(&(*recvaddr), sizeof(*recvaddr));
-    recvaddr->sin_addr.s_addr = htonl(INADDR_ANY);
-
-
-    return ((struct sockaddr*)recvaddr);
+    if (type == 11 && code == 0)
+        return (1);
+    return (0);
 }
 
-struct sockaddr *set_recvaddr_ipv6(void)
+int dest_port_unreach(int type, int code)
 {
-    struct sockaddr_in6 *recvaddr;
+    if (type == 3 && code == 3)
+        return (1);
+    return (0);
+}
 
-    if (!(recvaddr = (struct sockaddr_in6*)malloc(sizeof(struct sockaddr_in6))))
-        error_exit("receiving structure allocation");
-    bzero(&(*recvaddr), sizeof(*recvaddr));
-    recvaddr->sin6_addr = in6addr_any;
+void get_ip_addr(struct sockaddr* info, int type, int pos)
+{
+    char *addr;
 
-    return ((struct sockaddr*)recvaddr);
+    addr = (type == NODE) ? &(env.node[pos].ip[0]) : &(env.target.ip[0]);
+    if (env.ip.type == 4)
+        inet_ntop(env.ip.family, &(((struct sockaddr_in*)info)->sin_addr), addr, env.ip.addrlen);
+    else
+        inet_ntop(env.ip.family, &(((struct sockaddr_in6*)info)->sin6_addr), addr, env.ip.addrlen);
+}
+
+void get_hostname(struct sockaddr* info, int type, int pos)
+{
+    char *hostname;
+
+    hostname = (type == NODE) ? &(env.node[pos].hostname[0]) : &(env.target.hostname[0]);
+    if (getnameinfo(info, (socklen_t)sizeof(info), hostname, NI_MAXHOST, NULL, 0, 0) != 0)
+        hostname = "N/A";
+}
+
+void display_node(int pos)
+{
+    char node[1088];
+
+    sprintf(node, "%s (%s)  %.3LF ms", env.node[pos].hostname ,env.node[pos].ip, env.node[pos].interval);
+    write(1, &node[0], ft_strlen(node));
+    env.node[pos].displayed = 1;
+}
+
+void display_interval(int pos)
+{
+    char interval[16];
+
+    sprintf(interval, "  %.3LF ms", env.node[pos].interval);
+    write(1, &interval[0], ft_strlen(interval));
+
+    env.node[pos].displayed = 1;
+}
+
+int is_same_node(int first_pos, int second_pos)
+{
+
+    if (ft_strncmp(&(env.node[first_pos].ip[0]), &(env.node[second_pos].ip[0]), 16) == 0)
+        return (1);
+    return (0);
+}
+
+void display_remaining_node(void)
+{
+    int pos;
+
+    pos = 0;
+    while (pos < 3)
+    {
+        if (env.node[pos].on && !(env.node[pos].displayed))
+        {
+            if (pos == 1)
+            {
+                if (is_same_node(0, 2))
+                    display_interval(2);
+                write(1, "\n    ", 5);
+                display_node(pos);
+            }
+            else if (pos == 2)
+            {
+                if (is_same_node(1, 2))
+                    display_interval(pos);
+                else
+                {
+                    write(1, "\n    ", 5);
+                    display_node(pos);
+                }
+            }
+        }
+        pos++;
+    }
+    write(1, "\n", 1);
+}
+
+
+
+void add_node_info(void)
+{
+    int pos;
+
+    pos = 0;
+    while (pos < 2 && env.node[pos].on)
+        pos++;
+
+    env.node[pos].on = 1;
+    get_ip_addr(env.recvaddr, NODE, pos);
+    get_hostname(env.recvaddr, NODE, pos);
+    env.node[pos].interval = (env.time.ts_after - env.time.ts_before);
+
+    if (pos == 0)
+        display_node(pos);
+    else if (pos == 1 && is_same_node(0, pos))
+        display_interval(pos);
+}
+
+int is_end(int type, int code)
+{
+    if (type == 3 && code == 3)
+        return (1);
+    return (0);
+}
+
+void program_exit(void)
+{
+
+    exit(0);
 }
 
 void manage_icmp_reply(void)
 {
-    printf("\n===================== REC %d =======================\n", env.ttl);
-    struct sockaddr* recvaddr;
+    char buf[1024];
+    struct icmp_h *icmp_r;
+    socklen_t size;
 
-    recvaddr = (env.ip.type == 4) ? set_recvaddr_ipv4() : set_recvaddr_ipv6();
+    bzero(&buf, sizeof(buf));
+    (env.ip.type == 4) ? set_recvaddr_ipv4() : set_recvaddr_ipv6();
 
-    uint64_t size;
+
     size = (env.ip.type == 4) ? sizeof(struct sockaddr_in) : sizeof(struct sockaddr_in6);
 
-    char buf[1024];
-    bzero(&buf, sizeof(buf));
 
-    int msgLen = recvfrom(env.recvsock, buf, sizeof(buf), 0, recvaddr, (socklen_t *)&size);
-    if (msgLen == -1)
+
+    if (recvfrom(env.recvsock, buf, sizeof(buf), 0, env.recvaddr, &size) < 0)
     {
         printf("ERRNO = %d\n", errno);
         perror("RECV ERROR: ");
     }
-    printf("msglen = %d\n", msgLen);
-    // printf("-------------\nbuf = %s\nmsgLen = %d\n", buf, msgLen);
+    env.time.ts_after = get_ts();
 
-    char recv_addr[env.ip.addrlen];
-    bzero(&recv_addr, sizeof(recv_addr));
+    icmp_r = (struct icmp_h *)&buf[20];
 
-    if (env.ip.type == 4)
-        inet_ntop(env.ip.family, &(((struct sockaddr_in*)recv_addr)->sin_addr), &(recv_addr[0]), env.ip.addrlen);
-    else
-        inet_ntop(env.ip.family, &(((struct sockaddr_in6*)recv_addr)->sin6_addr), &(recv_addr[0]), env.ip.addrlen);
+    if (ttl_exceeded(icmp_r->type, icmp_r->code) || dest_port_unreach(icmp_r->type, icmp_r->code))
+        add_node_info();
 
-    printf(">>>>>>>> ip: %s\n", recv_addr);
-
-    struct icmp_h *ptr;
+    if (is_end(icmp_r->type, icmp_r->code))
+        env.end = 1;
 
 
-    ptr = (struct icmp_h *)&buf[20];
-    printf("type = %d\n", ptr->type);
-    printf("code = %d\n", ptr->code);
+    free(env.recvaddr);
+    env.recvaddr = NULL;
 
-
-    bzero(&buf, sizeof(buf));
-    msgLen = -3;
-    free(recvaddr);
-    printf("===================== REC %d =======================\n\n",  env.ttl);
 }
 
-void manage_no_reply(void)
+void manage_no_reply(int pos)
 {
-    printf("NO REPLY\n");
+    static int prev = 2;
+
+    if (pos && prev != (pos - 1))
+        write(1, " * ", 4);
+    else
+        write(1, "* ", 3);
+    prev = pos;
 }
 
 void traceroute_loop(void)
@@ -219,29 +285,28 @@ void traceroute_loop(void)
     int count;
 
     count = 0;
+
     while (1)
     {
         count = 0;
+
         set_ttl();
-        while (count < 1)
+        bzero(&env.node, sizeof(env.node));
+        while (count < 3)
         {
             send_datagram();
             set_select();
-            select((env.recvsock + 1), &(env.read_set), NULL, NULL, &(env.timeout));
+            select((env.recvsock + 1), &(env.read_set), NULL, NULL, &(env.time.to));
             if (FD_ISSET(env.recvsock, &(env.read_set)))
-            {
                 manage_icmp_reply();
-                // FD_CLR(env.recvsock, &(env.read_set));
-            }
-
             else
-                manage_no_reply();
+                manage_no_reply(count);
 
-            printf("env.timeout.tv_sec = %ld\n", env.timeout.tv_sec);
-            printf("env.timeout.tv_usec = %ld\n", env.timeout.tv_usec);
-            sleep(5);
             count++;
         }
+        display_remaining_node();
+        if (env.end)
+            program_exit();
         env.ttl++;
     }
 }
@@ -280,23 +345,23 @@ void get_targetinfo(void)
     int ret;
 
     bzero(&hints, sizeof(hints));
-    bzero(&env.targetinfo, sizeof(env.targetinfo));
+    bzero(&env.target.info, sizeof(env.target.info));
 
     hints.ai_family = env.ip.family;
     hints.ai_socktype = SOCK_DGRAM;
     hints.ai_protocol = IPPROTO_UDP;
 
     printf("env.args.target = %s\n", env.args.target);
-    if ((ret = getaddrinfo(env.args.target, NULL, &hints, &(env.targetinfo))) != 0)
+    if ((ret = getaddrinfo(env.args.target, NULL, &hints, &(env.target.info))) != 0)
         addrinfo_error(ret);
 
     char send_addr[env.ip.addrlen];
     bzero(&send_addr, sizeof(send_addr));
 
     if (env.ip.type == 4)
-        inet_ntop(env.ip.family, &(((struct sockaddr_in*)env.targetinfo->ai_addr)->sin_addr), &(send_addr[0]), env.ip.addrlen);
+        inet_ntop(env.ip.family, &(((struct sockaddr_in*)env.target.info->ai_addr)->sin_addr), &(send_addr[0]), env.ip.addrlen);
     else
-        inet_ntop(env.ip.family, &(((struct sockaddr_in6*)env.targetinfo->ai_addr)->sin6_addr), &(send_addr[0]), env.ip.addrlen);
+        inet_ntop(env.ip.family, &(((struct sockaddr_in6*)env.target.info->ai_addr)->sin6_addr), &(send_addr[0]), env.ip.addrlen);
 
     printf(">>>>>>>>>> send_addr = %s\n", send_addr);
 }
@@ -313,15 +378,6 @@ void	display_wrong_option(char option)
 	display_help(1);
 }
 
-void set_ipv4(void)
-{
-	env.ip.type = 4;
-	env.ip.protocol = IPPROTO_IP;
-	env.ip.family = AF_INET;
-    env.ip.addrlen = INET_ADDRSTRLEN;
-	env.ip.icmp = IPPROTO_ICMP;
-}
-
 int main(int argc, char **argv)
 {
     env.port = 33435;
@@ -330,15 +386,10 @@ int main(int argc, char **argv)
     verify_user_rights();
     set_ipv4();
     parse_args(argc, argv);
+
     create_socket();
     get_targetinfo();
 
-    bzero(&(env.recvaddr), sizeof(env.recvaddr));                                         
-
-    struct sockaddr_in recvaddr;
-    bzero(&(env.recvaddr), sizeof(env.recvaddr));  
-    recvaddr.sin_family = env.ip.family;
-    recvaddr.sin_addr.s_addr = inet_addr("192.168.1.68");
 
 
     traceroute_loop();

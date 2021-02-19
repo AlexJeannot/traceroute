@@ -6,7 +6,7 @@ CC = gcc
 FLAGS = -Wall -Wextra -Werror
 RM = rm -rf
 
-SRCS = traceroute.c args.c annexes.c
+SRCS = traceroute.c args.c annexes.c ipv4.c ipv6.c
 OBJS = $(SRCS:%.c=%.o)
 
 INC = traceroute.h
