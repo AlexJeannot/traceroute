@@ -92,35 +92,104 @@ typedef struct s_env
 
 t_env env;
 
-void display_help(int code);
-void	parse_args(int argc, char **argv);
-void error_exit(char *error);
+
+/*
+ * ANNEXES.C
+*/
+long double	get_ts(void);
 int	ft_isdigit(int c);
-void	display_wrong_option(char option);
+int	ft_isalpha(int c);
 size_t		ft_strlen(const char *str);
 int	ft_strncmp(const char *s1, const char *s2, size_t n);
-int	ft_isalpha(int c);
+
+/*
+ * ARGS.C
+*/
+void	parse_args(int argc, char **argv);
+
+/*
+ * CONTROL.C
+*/
+void verify_user_rights(void);
+int ttl_exceeded(int type, int code);
+int dest_port_unreach(int type, int code);
+int is_same_node(int first_pos, int second_pos);
+
+/*
+ * DISPLAY.C
+*/
+void display_introduction(void);
+void display_help(int code);
+void	display_wrong_option(char option);
+void display_ttl(void);
+
+/*
+ * ERROR.C
+*/
 void error_msg_exit(char *option, char *arg);
+void	addrinfo_error(char *target, int error_code);
 
-
-void	signal_handler(int code);
-void	manage_signal(void);
-void    program_exit(void);
+/*
+ * EXIT.C
+*/
+void free_memory(void);
+void free_fd(void);
 void error_exit(char *error);
-void increment_port(void);
+void program_exit(void);
 
-//options.c
-int	parse_options(char *option, char* next_arg)
-
-
-//ipv4
+/*
+ * IPV4.C
+*/
 void set_ipv4(void);
 void set_sendaddr_ipv4(void);
 void set_recvaddr_ipv4(void);
 
-//ipv6
+/*
+ * IPV6.C
+*/
 void set_ipv6(void);
 void set_sendaddr_ipv6(void);
 void set_recvaddr_ipv6(void);
+
+/*
+ * MANAGE_IO.C
+*/
+void send_datagram(void);
+void manage_icmp_reply(void);
+void manage_no_reply(int pos);
+
+/*
+ * NETWORK.C
+*/
+void set_ttl(void);
+void get_ip_addr(struct sockaddr* info, int type, int pos);
+void get_hostname(struct sockaddr* info, int type, int pos);
+void create_socket(void);
+void get_targetinfo(void);
+
+/*
+ * NODE.C
+*/
+void display_remaining_node(void);
+void add_node_info(void);
+
+/*
+ * OPTIONS.C
+*/
+int	parse_options(char *option, char* next_arg);
+
+/*
+ * SETTINGS.C
+*/
+void set_select(void);
+void increment_port(void);
+void set_next_trace(void);
+void set_default_info(void);
+
+/*
+ * SIGNAL.C
+*/
+void	signal_handler(int code);
+void	manage_signal(void);
 
 #endif

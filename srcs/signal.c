@@ -1,4 +1,4 @@
-#include "./traceroute.h"
+#include "../inc/traceroute.h"
 
 /*
  * Signals handler function
