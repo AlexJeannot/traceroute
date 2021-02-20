@@ -1,8 +1,24 @@
-#include "traceroute.h"
+#include "../inc/traceroute.h"
+
+long double	get_ts(void)
+{
+	struct	timeval tv;
+	struct	timezone tz;
+
+	gettimeofday(&tv, &tz);
+	return (((long double)tv.tv_sec * 1000) + ((long double)tv.tv_usec / 1000));
+}
 
 int	ft_isdigit(int c)
 {
 	if (c >= '0' && c <= '9')
+		return (1);
+	return (0);
+}
+
+int	ft_isalpha(int c)
+{
+	if ((c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z'))
 		return (1);
 	return (0);
 }

@@ -41,7 +41,9 @@ typedef struct s_node
 typedef struct s_args
 {
     char *target;
-    char error_msg[1024];
+    long double to;
+    int32_t packet_size;
+
 } t_args;
 
 typedef struct s_ip
@@ -59,6 +61,7 @@ typedef struct s_target
     struct addrinfo *info;
     char ip[INET6_ADDRSTRLEN];
     char hostname[NI_MAXHOST];
+    int reached;
 } t_target;
 
 typedef struct s_time
@@ -76,6 +79,7 @@ typedef struct s_env
     t_ip ip;
     struct sockaddr *sendaddr;
     struct sockaddr *recvaddr;
+    char *error_msg;
     fd_set read_set;
     t_target target;
     t_time time;
@@ -83,9 +87,7 @@ typedef struct s_env
     t_node node[3];
     int end;
     int ttl;
-    int max_ttl;
-    uint16_t port;
-
+    int32_t port;
 } t_env;
 
 t_env env;
@@ -97,6 +99,19 @@ int	ft_isdigit(int c);
 void	display_wrong_option(char option);
 size_t		ft_strlen(const char *str);
 int	ft_strncmp(const char *s1, const char *s2, size_t n);
+int	ft_isalpha(int c);
+void error_msg_exit(char *option, char *arg);
+
+
+void	signal_handler(int code);
+void	manage_signal(void);
+void    program_exit(void);
+void error_exit(char *error);
+void increment_port(void);
+
+//options.c
+int	parse_options(char *option, char* next_arg)
+
 
 //ipv4
 void set_ipv4(void);

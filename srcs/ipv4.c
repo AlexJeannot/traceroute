@@ -1,4 +1,4 @@
-#include "traceroute.h"
+#include "../inc/traceroute.h"
 
 void set_ipv4(void)
 {
@@ -24,7 +24,7 @@ void set_sendaddr_ipv4(void)
     sendaddr->sin_port = htons(env.port);
     // printf("CHECK 1.2\n");
 
-    env.port++;
+    increment_port();
     env.sendaddr = (struct sockaddr*)sendaddr;
 }
 

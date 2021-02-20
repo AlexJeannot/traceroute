@@ -1,4 +1,4 @@
-#include "traceroute.h"
+#include "../inc/traceroute.h"
 
 void set_ipv6(void)
 {
@@ -21,7 +21,7 @@ void set_sendaddr_ipv6(void)
     sendaddr->sin6_addr = ((struct sockaddr_in6 *)env.target.info->ai_addr)->sin6_addr;
     sendaddr->sin6_port = htons(env.port);
 
-    env.port++;
+    increment_port();
     env.sendaddr = (struct sockaddr*)sendaddr;
 }
 
