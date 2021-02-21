@@ -21,7 +21,7 @@ void display_interval(int pos)
 
 void display_remaining_node(void)
 {
-    int pos;
+    int8_t pos;
 
     pos = 0;
     while (pos < 3)
@@ -53,12 +53,13 @@ void display_remaining_node(void)
 
 void add_node_info(void)
 {
-    int pos;
+    int8_t pos;
 
     pos = 0;
     while (pos < 2 && env.node[pos].on)
         pos++;
 
+    //printf("add node %d\n", pos);
     env.node[pos].on = 1;
     get_ip_addr(env.recvaddr, NODE, pos);
     get_hostname(env.recvaddr, NODE, pos);
@@ -68,4 +69,5 @@ void add_node_info(void)
         display_node(pos);
     else if (pos == 1 && is_same_node(0, pos))
         display_interval(pos);
+
 }

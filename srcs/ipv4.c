@@ -9,20 +9,37 @@ void set_ipv4(void)
 	env.ip.icmp = IPPROTO_ICMP;
 }
 
+void bind_sendsock_ipv4(void)
+{
+    struct sockaddr_in bindaddr;
+    struct sockaddr_in getport;
+    socklen_t size;
+
+    bzero(&bindaddr, sizeof(bindaddr));
+    bindaddr.sin_family = env.ip.family;
+    bindaddr.sin_addr.s_addr = INADDR_ANY;
+
+    if (bind(env.sendsock, (struct sockaddr *)&bindaddr, (socklen_t)sizeof(bindaddr)) != 0)
+        error_exit("bind sending socket failed");
+
+    bzero(&getport, sizeof(getport));
+    size = sizeof(getport);
+    if (getsockname(env.sendsock, (struct sockaddr *)&getport, &size) != 0)
+        error_exit("retreiving source port failed\n");
+    env.sport = ntohs(getport.sin_port);
+}
+
 void set_sendaddr_ipv4(void)
 {
     struct sockaddr_in *sendaddr;
 
     if (!(sendaddr = (struct sockaddr_in*)malloc(sizeof(struct sockaddr_in))))
         error_exit("sending structure allocation");
-    // printf("CHECK 1.1\n");
 
-    // printf("sizeof(*sendaddr) = %lu\n", sizeof(struct sockaddr_in));
     bzero(sendaddr, sizeof(struct sockaddr_in));
     sendaddr->sin_family = env.ip.family;
     sendaddr->sin_addr = ((struct sockaddr_in *)env.target.info->ai_addr)->sin_addr;
-    sendaddr->sin_port = htons(env.port);
-    // printf("CHECK 1.2\n");
+    sendaddr->sin_port = htons(env.dport);
 
     increment_port();
     env.sendaddr = (struct sockaddr*)sendaddr;

@@ -6,7 +6,7 @@ NAME = ft_traceroute
 
 # COMPILATION
 CC = gcc
-FLAGS = -Wall -Wextra -Werror
+FLAGS = -Wall -Wextra -Werror -Walign
 RM = rm -rf
 
 

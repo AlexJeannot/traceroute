@@ -8,6 +8,8 @@ void free_memory(void)
         free(env.sendaddr);
     if (env.recvaddr)
         free(env.recvaddr);
+    if (env.target.info)
+        freeaddrinfo(env.target.info);
 }
 
 void free_fd(void)
@@ -23,6 +25,8 @@ void error_exit(char *error)
     fprintf(stderr, "ft_traceroute: %s\n", error);
     free_memory();
     free_fd();
+    system("leaks a.out");
+    system("lsof -c ft_traceroute");
     exit(1);
 }
 
@@ -30,5 +34,7 @@ void program_exit(void)
 {
     free_memory();
     free_fd();
+    system("leaks ft_traceroute");
+    system("lsof -c ft_traceroute");
     exit(0);
 }

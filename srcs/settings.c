@@ -11,9 +11,9 @@ void set_select(void)
 
 void increment_port(void)
 {
-    env.port++;
-    if (env.port > 65535)
-        env.port = 33435;
+    env.dport++;
+    if (env.dport > 65535)
+        env.dport = 33435;
 }
 
 void set_next_trace(void)
@@ -29,7 +29,7 @@ void set_default_info(void)
 {
     bzero(&env, sizeof(env));
     env.ttl = 1;
-    env.port = 33435;
+    env.dport = 33435;
     env.args.to = 5;
     env.args.packet_size = 0;
     set_ipv4();

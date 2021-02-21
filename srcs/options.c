@@ -2,7 +2,7 @@
 
 int	parse_first_ttl(char *current_arg, char *next_arg)
 {
-	int	count;
+	int16_t	count;
 	char*	arg;
 
 	count = 0;
@@ -20,13 +20,13 @@ int	parse_first_ttl(char *current_arg, char *next_arg)
 		error_exit("option requires an argument -- f");
     env.ttl = atoi(arg);
 	if (env.ttl < 1 || env.ttl > 255)
-		error_exit("invalid first ttl: invalid value (must be > 0 and < 256");
+		error_exit("invalid first ttl: invalid value (must be > 0 and < 256)");
 	return (current_arg[0] ? 0 : 1);
 }
 
 int	parse_timeout(char *current_arg, char *next_arg)
 {
-	int	count;
+	int16_t	count;
 	char*	arg;
 
 	count = 0;
@@ -36,13 +36,14 @@ int	parse_timeout(char *current_arg, char *next_arg)
 		while (arg[count])
 		{
 			if (!(ft_isdigit(arg[count])) && arg[count] != '.')
-				error_msg_exit("timeout", arg);
+				error_msg_exit("wait time", arg);
 			count++;
 		}
 		env.args.to = strtold(arg, NULL);
-		if (errno == ERANGE || errno == EINVAL || env.args.to < 0)
-			error_msg_exit("timeout", arg);
-
+		if (errno == ERANGE || errno == EINVAL)
+			error_msg_exit("wait time", arg);
+		else if (env.args.to < 0 || env.args.to > 3600)
+			error_exit("invalid wait time: invalid value (must be > 0 and <= 3600)");
 	}
 	else
 		error_exit("option requires an argument -- w");
@@ -51,7 +52,7 @@ int	parse_timeout(char *current_arg, char *next_arg)
 
 int	parse_port(char *current_arg, char *next_arg)
 {
-	int	count;
+	int16_t	count;
 	char*	arg;
 
 	count = 0;
@@ -64,12 +65,12 @@ int	parse_port(char *current_arg, char *next_arg)
 				error_msg_exit("port", arg);
 			count++;
 		}
-		env.port = atoi(arg);
-		if (env.port < 1 || env.port > 65535)
+		env.dport = atoi(arg);
+		if (env.dport < 1 || env.dport > 65535)
 			error_exit("invalid port: invalid value (must be > 0 and <= 65535)");
 	}
 	else
-		error_exit("option requires an argument -- w");
+		error_exit("option requires an argument -- p");
 	return (current_arg[0] ? 0 : 1);
 }
 
@@ -78,7 +79,7 @@ int	parse_port(char *current_arg, char *next_arg)
 */ 
 int	parse_options(char *option, char* next_arg)
 {
-	int	count;
+	int8_t	count;
 
 	count = 0;
 	while (option[count])

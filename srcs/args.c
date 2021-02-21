@@ -2,7 +2,7 @@
 
 void parse_packet_size(char *arg)
 {
-	int	count;
+	int16_t	count;
 
 	count = 0;
 	while (arg[count])
@@ -25,7 +25,7 @@ void parse_packet_size(char *arg)
 */ 
 void	parse_args(int argc, char **argv)
 {
-	int	pos;
+	int16_t	pos;
 
 	pos = 1;
 	if (argc < 2)

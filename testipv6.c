@@ -1,5 +1,5 @@
 
-#include "traceroute.h"
+#include "./inc/traceroute.h"
 
 void	getaddr_error(int error_code)
 {
@@ -33,7 +33,7 @@ int main()
 
     struct addrinfo *result;
     int ret;
-    if ((ret = getaddrinfo("google.fr", NULL, &hints, &(result))) != 0)
+    if ((ret = getaddrinfo("google.com", NULL, &hints, &(result))) != 0)
     {
         printf(">>>> GETADDR FAILED ret = %d\n", ret);
         getaddr_error(ret);
@@ -63,7 +63,7 @@ int main()
     else
         printf(">>>> SOCKET SUCCEED socket = %d\n", sockfd);
 
-    char sendbuf[150];
+    char sendbuf[32];
     int retsend;
 
     bzero(&sendbuf, sizeof(sendbuf));

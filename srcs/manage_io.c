@@ -4,9 +4,9 @@ void send_datagram(void)
 {
     char data[env.args.packet_size - 28];
     socklen_t size;
-    int tosend;
-    int sent;
-    int total;
+    int32_t tosend;
+    int32_t sent;
+    int32_t total;
 
     bzero(&data, sizeof(data));
     (env.ip.type == 4) ? set_sendaddr_ipv4() : set_sendaddr_ipv6();
@@ -27,34 +27,43 @@ void send_datagram(void)
     env.sendaddr = NULL;
 }
 
-void manage_icmp_reply(void)
+int8_t manage_icmp_reply(void)
 {
-    char buf[1024];
-    struct icmp_h *icmp_r;
+    char data[1024];
+    struct icmp *icmphdr;
     socklen_t size;
+    int8_t ret_val;
 
-    bzero(&buf, sizeof(buf));
+    ret_val = R_PACKET;
+    bzero(&data, sizeof(data));
     (env.ip.type == 4) ? set_recvaddr_ipv4() : set_recvaddr_ipv6();
     size = (env.ip.type == 4) ? sizeof(struct sockaddr_in) : sizeof(struct sockaddr_in6);
 
-    if (recvfrom(env.recvsock, buf, sizeof(buf), 0, env.recvaddr, &size) < 0)
+    int ret;
+    if ((ret = recvfrom(env.recvsock, data, sizeof(data), 0, env.recvaddr, &size) )< 0)
         error_exit("recvfrom() failed");
     env.time.ts_after = get_ts();
 
-    icmp_r = (struct icmp_h *)&buf[20];
-    if (ttl_exceeded(icmp_r->type, icmp_r->code) || dest_port_unreach(icmp_r->type, icmp_r->code))
-        add_node_info();
+    if ((icmphdr = is_right_packet(&data[0])))
+    {
+        if (ttl_exceeded(icmphdr->icmp_type, icmphdr->icmp_code)
+        || dest_port_unreach(icmphdr->icmp_type, icmphdr->icmp_code))
+            add_node_info();
 
-    if (dest_port_unreach(icmp_r->type, icmp_r->code))
-        env.target.reached = 1;
+        if (dest_port_unreach(icmphdr->icmp_type, icmphdr->icmp_code))
+            env.target.reached = 1;
+    }
+    else
+        ret_val = W_PACKET;
 
     free(env.recvaddr);
     env.recvaddr = NULL;
+    return (ret_val);
 }
 
 void manage_no_reply(int pos)
 {
-    static int prev = 2;
+    static int8_t prev = 2;
 
     if (pos && prev != (pos - 1))
         write(1, " * ", 4);
@@ -62,4 +71,3 @@ void manage_no_reply(int pos)
         write(1, "* ", 3);
     prev = pos;
 }
-

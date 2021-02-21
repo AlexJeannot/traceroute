@@ -2,7 +2,7 @@
 
 void set_ttl(void)
 {
-    int set_ttl;
+    int32_t set_ttl;
 
     set_ttl = env.ttl;
     if ((setsockopt(env.sendsock, env.ip.protocol, IP_TTL, (char *)&set_ttl, (socklen_t)(sizeof(set_ttl)))) < 0)
@@ -37,8 +37,14 @@ void create_socket(void)
     if ((env.sendsock = socket(env.ip.family, SOCK_DGRAM, IPPROTO_UDP)) < 0)
         error_exit("UDP socket creation failed");
 
+
+
     if ((env.recvsock = socket(env.ip.family, SOCK_RAW, env.ip.icmp)) < 0)
         error_exit("ICMP socket creation failed");
+
+    (env.ip.type == 4) ? bind_sendsock_ipv4() : bind_sendsock_ipv6();
+    
+
 }
 
 void get_targetinfo(void)
