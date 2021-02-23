@@ -16,6 +16,7 @@
 #include <netinet/ip.h>
 #include <netinet/ip_icmp.h>
 #include <netinet/udp.h>
+#include <signal.h>
 
 #define NODE 1
 #define TARGET 2
@@ -90,7 +91,7 @@ typedef struct s_env
     char *error_msg;
 } t_env;
 
-t_env env;
+extern t_env env;
 
 /*
  * ANNEXES.C

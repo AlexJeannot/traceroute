@@ -1,5 +1,7 @@
 #include "../inc/traceroute.h"
 
+
+
 long double	get_ts(void)
 {
 	struct	timeval tv;

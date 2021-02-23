@@ -1,5 +1,7 @@
 #include "../inc/traceroute.h"
 
+t_env env;
+
 void retrieve_icmp_reply(int count)
 {
     select((env.recvsock + 1), &(env.read_set), NULL, NULL, &(env.time.to));
