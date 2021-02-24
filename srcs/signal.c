@@ -1,8 +1,8 @@
 #include "../inc/traceroute.h"
 
 /*
- * Signals handler function
- * SIGINT and SIGQUIT exit program (free resources in program_exit())
+* Signals handler function
+* SIGINT and SIGQUIT exit program (free resources in program_exit())
 */
 void	signal_handler(int code)
 {
@@ -11,7 +11,7 @@ void	signal_handler(int code)
 }
 
 /*
- * Set signal manager
+* Set signal manager
 */
 void	manage_signal(void)
 {

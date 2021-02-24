@@ -3,7 +3,7 @@
 int	parse_first_ttl(char *current_arg, char *next_arg)
 {
 	int16_t	count;
-	char*	arg;
+	char	*arg;
 
 	count = 0;
 	arg = (current_arg[count]) ? current_arg : next_arg;
@@ -18,7 +18,7 @@ int	parse_first_ttl(char *current_arg, char *next_arg)
 	}
 	else
 		error_exit("option requires an argument -- f");
-    env.ttl = atoi(arg);
+	env.ttl = atoi(arg);
 	if (env.ttl < 1 || env.ttl > 255)
 		error_exit("invalid first ttl: invalid value (must be > 0 and < 256)");
 	return (current_arg[0] ? 0 : 1);
@@ -27,7 +27,7 @@ int	parse_first_ttl(char *current_arg, char *next_arg)
 int	parse_timeout(char *current_arg, char *next_arg)
 {
 	int16_t	count;
-	char*	arg;
+	char	*arg;
 
 	count = 0;
 	arg = (current_arg[count]) ? current_arg : next_arg;
@@ -53,7 +53,7 @@ int	parse_timeout(char *current_arg, char *next_arg)
 int	parse_port(char *current_arg, char *next_arg)
 {
 	int16_t	count;
-	char*	arg;
+	char	*arg;
 
 	count = 0;
 	arg = (current_arg[count]) ? current_arg : next_arg;
@@ -75,9 +75,9 @@ int	parse_port(char *current_arg, char *next_arg)
 }
 
 /*
- * Parsing of options (beginning by an -)
-*/ 
-int	parse_options(char *option, char* next_arg)
+* Parsing of options (beginning by an -)
+*/
+int	parse_options(char *option, char *next_arg)
 {
 	int8_t	count;
 

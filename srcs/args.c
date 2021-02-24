@@ -1,6 +1,9 @@
 #include "../inc/traceroute.h"
 
-void parse_packet_size(char *arg)
+/*
+ * Parsing of packet size
+*/
+void	parse_packet_size(char *arg)
 {
 	int16_t	count;
 
@@ -22,7 +25,7 @@ void parse_packet_size(char *arg)
 
 /*
  * Parsing of all arguments (options and hostname)
-*/ 
+*/
 void	parse_args(int argc, char **argv)
 {
 	int16_t	pos;
@@ -30,23 +33,23 @@ void	parse_args(int argc, char **argv)
 	pos = 1;
 	if (argc < 2)
 		display_help(1);
-    while (pos < argc)
-    {
-        if (argv[pos][0] == '-' && argv[pos][1])
-            pos += parse_options(&(argv[pos][1]), argv[pos + 1]);
-        else
-        {
-            if (!(env.args.target))
-            	env.args.target = argv[pos];
+	while (pos < argc)
+	{
+		if (argv[pos][0] == '-' && argv[pos][1])
+			pos += parse_options(&(argv[pos][1]), argv[pos + 1]);
+		else
+		{
+			if (!(env.args.target))
+				env.args.target = argv[pos];
 			else if (!(env.args.packet_size))
 				parse_packet_size(argv[pos]);
 			else
 				error_msg_exit("extra argument", argv[pos]);
-        }
-        pos++;
-    }
+		}
+		pos++;
+	}
 	if (!(env.args.target))
 		error_exit("host argument missing");
-	if (!(env.args.packet_size))
+	if (env.args.packet_size == -1)
 		env.args.packet_size = 60;
 }

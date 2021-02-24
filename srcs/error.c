@@ -1,16 +1,21 @@
 #include "../inc/traceroute.h"
 
-void error_msg_exit(char *option, char *arg)
+/*
+ * Allocate space for error message
+ * Create error message
+ * Pass it to error_exit function
+*/
+void	error_msg_exit(char *option, char *arg)
 {
-    if (!(env.error_msg = (char *)malloc(sizeof(char) * (ft_strlen(option) + ft_strlen(arg) + 13))))
-        error_exit("Error message memory allocation failed");
-    sprintf(env.error_msg, "invalid %s: '%s'", option, arg);
-    error_exit(env.error_msg);
+	if (!(env.error_msg = (char *)malloc(sizeof(char) * (ft_strlen(option) + ft_strlen(arg) + 13))))
+		error_exit("Error message memory allocation failed");
+	sprintf(env.error_msg, "invalid %s: '%s'", option, arg);
+	error_exit(env.error_msg);
 }
 
 /*
- * Prepare error message depending on getaddrinfo return
-*/ 
+* Prepare error message depending on getaddrinfo return
+*/
 void	addrinfo_error(char *target, int error_code)
 {
 	char	*error;
@@ -29,5 +34,5 @@ void	addrinfo_error(char *target, int error_code)
 	else
 		error = "Error in adress resolution";
 
-    error_msg_exit(target, error);
+	error_msg_exit(target, error);
 }
