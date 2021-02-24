@@ -55,6 +55,7 @@ typedef struct	s_ip
 	int8_t	family;                     // AF_INET or AF_INET6
 	int8_t	addrlen;                    // INET_ADDRSTRLEN or INET6_ADDRSTRLEN
 	int8_t	icmp;                       // IPPROTO_ICMP or IPPROTO_ICMPV6
+    int8_t  header_size;                // 20 bytes or 40 bytes
 }		t_ip;
 
 /*

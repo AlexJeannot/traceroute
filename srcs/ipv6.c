@@ -10,6 +10,7 @@ void	set_ipv6(void)
 	env.ip.family = AF_INET6;
 	env.ip.addrlen = INET6_ADDRSTRLEN;
 	env.ip.icmp = IPPROTO_ICMPV6;
+	env.ip.header_size = 40;
 }
 
 /*

@@ -17,10 +17,25 @@ void	parse_packet_size(char *arg)
 	env.args.packet_size = atoi(arg);
 	if (env.args.packet_size < 0)
 		error_exit("invalid packet size: invalid value (must be > 0)");
-	else if (env.args.packet_size > 0 && env.args.packet_size < 28)
-		env.args.packet_size = 28;
 	else if (env.args.packet_size > 65000)
 		error_exit("invalid packet size: invalid value (must be <= 65000)");
+}
+
+/*
+ * Set packet size to default if unspecified
+ * Set packet size to minimal (0 data) if below
+*/
+void	verify_packet_size(void)
+{
+	int8_t	min;
+	int8_t	def;
+
+	min = (env.ip.type == 4) ? 28 : 48;
+	def = (env.ip.type == 4) ? 60 : 80;
+	if (env.args.packet_size == -1)
+		env.args.packet_size = def;
+	else if (env.args.packet_size < min)
+		env.args.packet_size = min;
 }
 
 /*
@@ -50,6 +65,5 @@ void	parse_args(int argc, char **argv)
 	}
 	if (!(env.args.target))
 		error_exit("host argument missing");
-	if (env.args.packet_size == -1)
-		env.args.packet_size = 60;
+	verify_packet_size();
 }

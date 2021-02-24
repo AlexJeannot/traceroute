@@ -10,6 +10,7 @@ void	set_ipv4(void)
 	env.ip.family = AF_INET;
 	env.ip.addrlen = INET_ADDRSTRLEN;
 	env.ip.icmp = IPPROTO_ICMP;
+	env.ip.header_size = 20;
 }
 
 /*

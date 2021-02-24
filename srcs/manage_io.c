@@ -2,13 +2,13 @@
 
 /*
  * Send UDP datagram to target
- * Amount of data is packet size (by default: 60 for IPv4 / 80 for IPv6)
+ * Amount of data is packet size (by default: 60 for IPv4 / 80 for IPv6) minus IP header size and UDP header size
  * Set sending structure
  * Sendto() while amount of data sent is not equal to total
 */
 void	send_datagram(void)
 {
-	char		data[env.args.packet_size - 28];
+	char		data[env.args.packet_size - (env.ip.header_size + 8)];
 	socklen_t	size;
 	int32_t		tosend;
 	int32_t		sent;
