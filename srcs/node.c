@@ -59,7 +59,6 @@ void add_node_info(void)
     while (pos < 2 && env.node[pos].on)
         pos++;
 
-    //printf("add node %d\n", pos);
     env.node[pos].on = 1;
     get_ip_addr(env.recvaddr, NODE, pos);
     get_hostname(env.recvaddr, NODE, pos);

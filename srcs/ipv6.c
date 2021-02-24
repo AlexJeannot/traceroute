@@ -27,7 +27,6 @@ void bind_sendsock_ipv6(void)
     if (getsockname(env.sendsock, (struct sockaddr *)&getport, &size) != 0)
         error_exit("retreiving source port failed\n");
     env.sport = ntohs(getport.sin6_port);
-    printf("env.sport = %d\n", env.sport);
 }
 
 void set_sendaddr_ipv6(void)

@@ -3,9 +3,11 @@
 void set_ttl(void)
 {
     int32_t set_ttl;
+    int8_t  ttl_flag;
 
     set_ttl = env.ttl;
-    if ((setsockopt(env.sendsock, env.ip.protocol, IP_TTL, (char *)&set_ttl, (socklen_t)(sizeof(set_ttl)))) < 0)
+    ttl_flag = (env.ip.type == 4) ? IP_TTL : IPV6_UNICAST_HOPS;
+    if ((setsockopt(env.sendsock, env.ip.protocol, ttl_flag, (char *)&set_ttl, (socklen_t)(sizeof(set_ttl)))) < 0)
         error_exit("TTL setup failed");
 }
 
