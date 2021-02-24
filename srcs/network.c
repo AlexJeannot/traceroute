@@ -23,10 +23,12 @@ void get_ip_addr(struct sockaddr* info, int type, int pos)
 void get_hostname(struct sockaddr* info, int type, int pos)
 {
     char *hostname;
+    socklen_t size;
 
     hostname = (type == NODE) ? &(env.node[pos].hostname[0]) : &(env.target.hostname[0]);
-    if (getnameinfo(info, (socklen_t)sizeof(info), hostname, NI_MAXHOST, NULL, 0, 0) != 0)
-        hostname = "N/A";
+    size = (env.ip.type == 4) ? sizeof(struct sockaddr_in) : sizeof(struct sockaddr_in6);
+    if (getnameinfo(info, size, hostname, NI_MAXHOST, NULL, 0, 0) != 0)
+        ft_strlcpy(hostname, "N/A", 4);
 }
 
 void create_socket(void)

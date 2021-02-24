@@ -23,15 +23,6 @@
 #define R_PACKET 3
 #define W_PACKET 4
 
-typedef struct icmp_h
-{
-    uint8_t type;
-    uint8_t code;
-    uint16_t checksum;
-    uint32_t padding;
-    
-} icmp_header;
-
 typedef struct s_node
 {
     char ip[INET6_ADDRSTRLEN];
@@ -101,6 +92,7 @@ int	ft_isdigit(int c);
 int	ft_isalpha(int c);
 size_t		ft_strlen(const char *str);
 int	ft_strncmp(const char *s1, const char *s2, size_t n);
+size_t	ft_strlcpy(char *dest, const char *src, size_t size);
 
 /*
  * ARGS.C

@@ -1,4 +1,6 @@
 #include "../inc/traceroute.h"
+#define RED "\033[38;5;124m"
+#define RESET "\033[0m"
 
 void free_memory(void)
 {
@@ -22,11 +24,10 @@ void free_fd(void)
 
 void error_exit(char *error)
 {
-    fprintf(stderr, "ft_traceroute: %s\n", error);
+    fprintf(stderr, "ft_traceroute: %s%s%s\n", RED, error, RESET);
     free_memory();
     free_fd();
-    system("leaks a.out");
-    system("lsof -c ft_traceroute");
+    // system("lsof -c ft_traceroute");
     exit(1);
 }
 
@@ -34,7 +35,6 @@ void program_exit(void)
 {
     free_memory();
     free_fd();
-    system("leaks ft_traceroute");
-    system("lsof -c ft_traceroute");
+    // system("lsof -c ft_traceroute");
     exit(0);
 }
