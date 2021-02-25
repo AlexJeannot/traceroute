@@ -69,7 +69,7 @@ struct icmp	*is_right_packet(char *data)
 	offset += (env.ip.type == 4) ? req_iphdr->ip_hl * 4 : 40;
 	udphdr = (struct udphdr *)&data[offset];
 
-	if (ntohs(udphdr->uh_sport) == env.sport)
+	if (ntohs(udphdr->uh_sport) == env.sport && ntohs(udphdr->uh_dport) == (env.dport - 1))
 		return (icmphdr);
 	return (NULL);
 }
